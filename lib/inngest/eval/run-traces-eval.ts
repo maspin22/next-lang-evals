@@ -10,6 +10,7 @@ import {
 import { zodToGeminiSchema } from '@/lib/ai/zod-to-gemini-schema';
 import { getLangfuse } from '@/lib/observability/langfuse';
 import { storeDataInBlob } from '@/lib/utils/blob-storage';
+import { FunctionCall } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
@@ -863,7 +864,7 @@ async function runSingleEval(
         ? openaiToolsToGeminiTools(tools)
         : undefined;
 
-      const response = await langfuseWrappedOpenAI({
+      const response = await langfuseWrappedGemini({
         model,
         prompt: promptText,
         // Pass converted schema for Gemini to enforce at generation time
@@ -897,12 +898,11 @@ async function runSingleEval(
       }
 
       // Extract tool calls from Gemini response if model chose to call tools
-      // Gemini's FunctionCall has: { id?: string, name?: string, args?: Record<string, unknown> }
       if (response?.functionCalls && response.functionCalls.length > 0) {
-        toolCalls = response.functionCalls.map((fc: any) => ({
+        toolCalls = response.functionCalls.map((fc: FunctionCall) => ({
           id: fc.id || uuidv4(),
           name: fc.name || 'unknown',
-          arguments: fc.args || {},
+          arguments: (fc.args as Record<string, any>) || {},
         }));
       }
 
