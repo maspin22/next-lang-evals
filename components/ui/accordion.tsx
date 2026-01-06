@@ -10,15 +10,12 @@ const Accordion = AccordionPrimitive.Root;
 
 const AccordionItem = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item> & {
-    defaultOpen?: boolean;
-  }
->(({ className, defaultOpen, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
+>(({ className, ...props }, ref) => (
   <AccordionPrimitive.Item
     ref={ref}
     className={cn('border-b', className)}
     {...props}
-    defaultOpen={defaultOpen}
   />
 ));
 AccordionItem.displayName = 'AccordionItem';

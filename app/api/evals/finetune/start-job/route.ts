@@ -46,7 +46,9 @@ export async function POST(request: NextRequest) {
 
     // Upload the training file to OpenAI
     // Create a File-like object from the buffer for Node.js environment
-    const blob = new Blob([trainingFileBuffer], {
+    // Convert Buffer to Uint8Array to satisfy TypeScript BlobPart type
+    const uint8Array = new Uint8Array(trainingFileBuffer);
+    const blob = new Blob([uint8Array], {
       type: 'application/x-ndjson',
     });
     const file = new File([blob], 'training.jsonl', {
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Wait for file to be processed
     let fileStatus = uploadedFile.status;
-    while (fileStatus === 'uploading' || fileStatus === 'processing') {
+    while (fileStatus !== 'processed' && fileStatus !== 'error') {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const fileInfo = await openai.files.retrieve(uploadedFile.id);
       fileStatus = fileInfo.status;

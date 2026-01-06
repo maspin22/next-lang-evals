@@ -14,7 +14,7 @@ export function zodToGeminiSchema(zodSchema: z.ZodSchema<any>): Schema {
 }
 
 function convertZodType(schema: z.ZodTypeAny): Schema {
-  const typeName = schema._def.typeName;
+  const typeName = (schema._def as any).typeName;
 
   switch (typeName) {
     case 'ZodString':
@@ -29,37 +29,37 @@ function convertZodType(schema: z.ZodTypeAny): Schema {
     case 'ZodArray':
       return {
         type: Type.ARRAY,
-        items: convertZodType((schema as z.ZodArray<any>)._def.type),
+        items: convertZodType((schema as any)._def.type),
       };
 
     case 'ZodObject':
       return handleZodObject(schema as z.ZodObject<any>);
 
     case 'ZodEnum':
-      const enumValues = (schema as z.ZodEnum<any>)._def.values;
+      const enumValues = (schema as any)._def.values;
       return {
         type: Type.STRING,
         enum: enumValues,
       };
 
     case 'ZodOptional':
-      return convertZodType((schema as z.ZodOptional<any>)._def.innerType);
+      return convertZodType((schema as any)._def.innerType);
 
     case 'ZodNullable':
       return {
-        ...convertZodType((schema as z.ZodNullable<any>)._def.innerType),
+        ...convertZodType((schema as any)._def.innerType),
         nullable: true,
       };
 
     case 'ZodDefault':
-      return convertZodType((schema as z.ZodDefault<any>)._def.innerType);
+      return convertZodType((schema as any)._def.innerType);
 
     case 'ZodEffects':
       // Handle .describe() and other effects
-      return convertZodType((schema as z.ZodEffects<any>)._def.schema);
+      return convertZodType((schema as any)._def.schema);
 
     case 'ZodLiteral':
-      const literalValue = (schema as z.ZodLiteral<any>)._def.value;
+      const literalValue = (schema as any)._def.value;
       if (typeof literalValue === 'string') {
         return { type: Type.STRING, enum: [literalValue] };
       } else if (typeof literalValue === 'number') {
@@ -71,16 +71,16 @@ function convertZodType(schema: z.ZodTypeAny): Schema {
 
     case 'ZodUnion':
       // For unions, try to find common type or use STRING
-      const unionTypes = (schema as z.ZodUnion<any>)._def.options;
+      const unionTypes = (schema as any)._def.options;
       // Check if all are strings (common for enum-like unions)
       const allStrings = unionTypes.every(
         (t: z.ZodTypeAny) =>
-          t._def.typeName === 'ZodLiteral' &&
-          typeof (t as z.ZodLiteral<any>)._def.value === 'string',
+          (t._def as any).typeName === 'ZodLiteral' &&
+          typeof (t as any)._def.value === 'string',
       );
       if (allStrings) {
         const values = unionTypes.map(
-          (t: z.ZodLiteral<any>) => t._def.value as string,
+          (t: z.ZodLiteral<any>) => (t._def as any).value as string,
         );
         return { type: Type.STRING, enum: values };
       }
@@ -96,7 +96,7 @@ function convertZodType(schema: z.ZodTypeAny): Schema {
 }
 
 function handleZodString(schema: z.ZodString): Schema {
-  const checks = schema._def.checks || [];
+  const checks = (schema._def as any).checks || [];
 
   // Check for enum-like constraints
   for (const check of checks) {
@@ -110,7 +110,7 @@ function handleZodString(schema: z.ZodString): Schema {
 }
 
 function handleZodObject(schema: z.ZodObject<any>): Schema {
-  const shape = schema._def.shape();
+  const shape = (schema._def as any).shape();
   const properties: Record<string, Schema> = {};
   const required: string[] = [];
 
@@ -124,8 +124,8 @@ function handleZodObject(schema: z.ZodObject<any>): Schema {
     }
 
     // Add description if available
-    if (zodValue._def.description) {
-      properties[key].description = zodValue._def.description;
+    if ((zodValue._def as any).description) {
+      properties[key].description = (zodValue._def as any).description;
     }
   }
 
